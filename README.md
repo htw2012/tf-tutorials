@@ -8,7 +8,7 @@ some learned cases about using tensorflow
       randomly generate some points
     * model
 
-      Y=WX+b
+      Y=WX+b,where y is a real value
 * Logistic_Regression
 
   * data
@@ -21,4 +21,4 @@ some learned cases about using tensorflow
 
   * model
 
-    Y=1/(1+e^(WX+B))
+    Y=1/(1+e^(WX+b)),where y is 0 or 1.
