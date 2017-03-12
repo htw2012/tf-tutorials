@@ -5,7 +5,7 @@
 输入X=(x1,x2....,xn)
 输出Y=(y1,y2...,ym)
 映射函数关系：
-            Y=WX+B
+            Y=WX+b
 W为m*n大小的权重矩阵
 B为m*1的偏置向量
 
@@ -15,11 +15,11 @@ target function:loss=0.5*sum((WX+B-Y)^2)
 let's define the model
 """
 
-import numpy as np
 import random
 import warnings
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 warnings.filterwarnings("ignore")
 import tensorflow as tf
