@@ -1,21 +1,20 @@
 It is slightly simplified implementation of Kim's [Convolutional Neural Networks for Sentence Classification](http://arxiv.org/abs/1408.5882) paper in Tensorflow.
 
-## Requirements
-
+## 依赖组件
 - Python 2
 - Tensorflow == r0.12
 - Numpy
 
-## Training
+## 训练步
 
-Print parameters:
+输出相关参数:
 
 ```bash
 ./train.py --help
 ```
 
 ```
-optional arguments:
+可选参数:
   -h, --help            show this help message and exit
   --embedding_dim EMBEDDING_DIM
                         Dimensionality of character embedding (default: 128)
@@ -45,22 +44,23 @@ optional arguments:
 
 ```
 
-Train:
+训练脚本:
 
 ```bash
 ./train.py
 ```
 
-## Evaluating
+## 评估
 
 ```bash
 ./eval.py --eval_train --checkpoint_dir="./runs/1459637919/checkpoints/"
 ```
 
-Replace the checkpoint dir with the output from the training. To use your own data, change the `eval.py` script to load your data.
+需要将训练保存的checkpoint_dir进行替换. 
+To use your own data, change the `eval.py` script to load your data.
 
 
-## References
+## 相关引用
 
 - [Convolutional Neural Networks for Sentence Classification](http://arxiv.org/abs/1408.5882)
 - [A Sensitivity Analysis of (and Practitioners' Guide to) Convolutional Neural Networks for Sentence Classification](http://arxiv.org/abs/1510.03820)
