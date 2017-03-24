@@ -75,11 +75,13 @@ print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
 # ==================================================
 
 with tf.Graph().as_default():
+    # 2.1 session的配置
     session_conf = tf.ConfigProto(
             allow_soft_placement=FLAGS.allow_soft_placement,
             log_device_placement=FLAGS.log_device_placement)
     sess = tf.Session(config=session_conf)
     with sess.as_default():
+        # 2.2 构建模型
         cnn = TextCNN(
                 sequence_length=x_train.shape[1],
                 num_classes=y_train.shape[1],
@@ -89,13 +91,13 @@ with tf.Graph().as_default():
                 num_filters=FLAGS.num_filters,
                 l2_reg_lambda=FLAGS.l2_reg_lambda)
 
-        # Define Training procedure
+        # 2.3 定义相关的损失函数和训练算法
         global_step = tf.Variable(0, name="global_step", trainable=False)
         optimizer = tf.train.AdamOptimizer(1e-3)
         grads_and_vars = optimizer.compute_gradients(cnn.loss)
         train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
 
-        # Keep track of gradient values and sparsity (optional)
+        # 2.4 记录 gradient values and sparsity (optional)
         grad_summaries = []
         for g, v in grads_and_vars:
             if g is not None:
@@ -103,50 +105,52 @@ with tf.Graph().as_default():
                 sparsity_summary = tf.scalar_summary("{}/grad/sparsity".format(v.name), tf.nn.zero_fraction(g))
                 grad_summaries.append(grad_hist_summary)
                 grad_summaries.append(sparsity_summary)
-        grad_summaries_merged = tf.merge_summary(grad_summaries)
+        grad_summaries_merged = tf.merge_summary(grad_summaries) # 收集所有的训练记录
 
-        # Output directory for models and summaries
+        # 2.5 写入相关的输出模型和摘要（runs/时间点的格式） Output directory for models and summaries
         timestamp = str(int(time.time()))
         out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))  # os.path.curdir is dot
         print("Writing to {}\n".format(out_dir))
 
-        # Summaries for loss and accuracy
+        # 记录损失和准确率（来自cnn的函数和准确率）
         loss_summary = tf.scalar_summary("loss", cnn.loss)
         acc_summary = tf.scalar_summary("accuracy", cnn.accuracy)
 
-        # Train Summaries
+        # 训练集的摘要 Train Summaries
         train_summary_op = tf.merge_summary([loss_summary, acc_summary, grad_summaries_merged])
         train_summary_dir = os.path.join(out_dir, "summaries", "train")
         train_summary_writer = tf.train.SummaryWriter(train_summary_dir, sess.graph)
 
-        # Dev summaries
+        # 开发集的摘要 summaries
         dev_summary_op = tf.merge_summary([loss_summary, acc_summary])
         dev_summary_dir = os.path.join(out_dir, "summaries", "dev")
         dev_summary_writer = tf.train.SummaryWriter(dev_summary_dir, sess.graph)
 
-        # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
+        # 2.6 记录模型相关的checkpoint. Tensorflow assumes this directory already exists so we need to create it
         checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
         checkpoint_prefix = os.path.join(checkpoint_dir, "model")
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
-        saver = tf.train.Saver(tf.global_variables())
+        saver = tf.train.Saver(tf.global_variables()) # 保存所有的变量
 
-        # Write vocabulary
+        # 2.7 记录相关词汇
         vocab_processor.save(os.path.join(out_dir, "vocab"))
 
-        # Initialize all variables
+        # 2.8 初始化变量
         sess.run(tf.global_variables_initializer())
-
 
         def train_step(x_batch, y_batch):
             """
-            A single training step
+            简单的训练步
             """
+
             feed_dict = {
                 cnn.input_x: x_batch,
                 cnn.input_y: y_batch,
                 cnn.dropout_keep_prob: FLAGS.dropout_keep_prob
             }
+
+            # 加入训练集的摘要和feed的数据
             _, step, summaries, loss, accuracy = sess.run(
                     [train_op, global_step, train_summary_op, cnn.loss, cnn.accuracy],
                     feed_dict)
@@ -157,34 +161,39 @@ with tf.Graph().as_default():
 
         def dev_step(x_batch, y_batch, writer=None):
             """
-            Evaluates model on a dev set
+            使用开发模型进行评估，dropout=1.0代表一份都不丢失
             """
             feed_dict = {
                 cnn.input_x: x_batch,
                 cnn.input_y: y_batch,
                 cnn.dropout_keep_prob: 1.0
             }
+
             step, summaries, loss, accuracy = sess.run(
                     [global_step, dev_summary_op, cnn.loss, cnn.accuracy],
                     feed_dict)
             time_str = datetime.datetime.now().isoformat()
             print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
-            if writer:
+            if writer: # 记录结果
                 writer.add_summary(summaries, step)
 
-
-        # Generate batches
+        # 2.9 生成训练和测试数据
         batches = data_helpers.batch_iter(
                 list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
-        # Training loop. For each batch...
+        # 2.10 按照每批进行训练 Training loop. For each batch...
         for batch in batches:
-            x_batch, y_batch = zip(*batch)
+            x_batch, y_batch = zip(*batch) # TODO？
+            # 2.10.1 每个batch训练步
             train_step(x_batch, y_batch)
+
+            # 2.10.2 记录整体的训练步
             current_step = tf.train.global_step(sess, global_step)
-            if current_step % FLAGS.evaluate_every == 0:
+
+            if current_step % FLAGS.evaluate_every == 0:# 2.10.2.1 输出验证集的结果
                 print("\nEvaluation:")
                 dev_step(x_dev, y_dev, writer=dev_summary_writer)
                 print("")
-            if current_step % FLAGS.checkpoint_every == 0:
+
+            if current_step % FLAGS.checkpoint_every == 0: # 2.10.2.2 保存模型的结果
                 path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                 print("Saved model checkpoint to {}\n".format(path))

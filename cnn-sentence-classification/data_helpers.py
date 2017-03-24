@@ -3,7 +3,6 @@ import re
 
 import numpy as np
 
-
 def clean_str(string):
     """
     Tokenization/string cleaning for all datasets except for SST.
@@ -46,18 +45,21 @@ def load_data_and_labels(positive_data_file, negative_data_file):
 
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
     """
-    给定数据构造一个数据批量的生成器
+    给定数据构造一个数据批量的生成器，只是返回其中data的一部分
     """
     data = np.array(data)
     data_size = len(data)
+
     num_batches_per_epoch = int(len(data) / batch_size) + 1
     for epoch in range(num_epochs):
-        # Shuffle the data at each epoch
+        # 每个epoch是否需要shuffle,一般shuffle要好
         if shuffle:
             shuffle_indices = np.random.permutation(np.arange(data_size))
             shuffled_data = data[shuffle_indices]
         else:
             shuffled_data = data
+
+        # 构建每个batch_size的生成器
         for batch_num in range(num_batches_per_epoch):
             start_index = batch_num * batch_size
             end_index = min((batch_num + 1) * batch_size, data_size)
