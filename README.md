@@ -44,4 +44,5 @@ some learned cases about using tensorflow
     tf.nn.softmax_cross_entropy_with_logit
 
 - cnn-sentence-classification
-[Convolutional Neural Networks for Sentence Classification](http://arxiv.org/abs/1408.5882)
+
+    [Convolutional Neural Networks for Sentence Classification](http://arxiv.org/abs/1408.5882)
